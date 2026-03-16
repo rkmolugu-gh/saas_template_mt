@@ -1,0 +1,5 @@
+# Initial users file for basic auth (Phase 1)
+# Format: email|password_hash|full_name|role
+# Passwords are bcrypt hashes. Default password: admin123
+# role: super_admin | owner | admin | member | viewer
+admin@saas-template.com|$2a$10$rqDcQa3HjSEZCBMERKDHcuPH8K0V5R.X6BfSzpE5qVzZgm1R8xF8q|Super Admin|super_admin
