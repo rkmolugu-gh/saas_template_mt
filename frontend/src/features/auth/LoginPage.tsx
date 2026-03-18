@@ -24,6 +24,25 @@ export default function LoginPage() {
     }
   };
 
+  const handleBypassLogin = async () => {
+    setError('');
+    setLoading(true);
+    try {
+      // Create mock user and token for bypass
+      const mockToken = 'bypass-token-' + Date.now();
+      
+      // Manually set auth state (bypassing API call)
+      localStorage.setItem('token', mockToken);
+      localStorage.setItem('tenantId', 'bypass-tenant');
+      
+      // Navigate to dashboard directly
+      navigate('/dashboard');
+    } catch (err: any) {
+      setError('Bypass login failed');
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
       <div className="w-full max-w-md">
@@ -57,6 +76,17 @@ export default function LoginPage() {
           <button type="submit" disabled={loading} className="w-full btn-primary">
             {loading ? 'Signing in...' : 'Sign in'}
           </button>
+
+          <div className="mt-4 pt-4 border-t border-surface-200/20">
+            <button
+              type="button"
+              onClick={handleBypassLogin}
+              disabled={loading}
+              className="w-full btn-secondary"
+            >
+              {loading ? 'Bypassing...' : '🚀 Bypass Login (No Email/Password)'}
+            </button>
+          </div>
         </form>
 
         <p className="text-center text-sm text-surface-200/50 mt-6">

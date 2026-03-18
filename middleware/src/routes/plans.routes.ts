@@ -1,7 +1,6 @@
 import { Router, Response } from "express";
 import { AppDataSource } from "../data-source";
 import { Plan } from "../../../backend/src/entities/Plan";
-import { PlanFeature } from "../../../backend/src/entities/PlanFeature";
 import { Subscription, SubscriptionStatus } from "../../../backend/src/entities/Subscription";
 import { authenticate } from "../middleware/auth";
 import { tenantScope, TenantScopedRequest } from "../middleware/tenantScope";
@@ -13,7 +12,6 @@ router.get("/", async (_req, res: Response) => {
   try {
     const plans = await AppDataSource.getRepository(Plan).find({
       where: { is_active: true },
-      relations: ["features"],
     });
     res.json(plans);
   } catch (err) {

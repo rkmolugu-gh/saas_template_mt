@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import api from '../lib/api';
-import type { User, TenantWithRole } from '../types';
+import type { User, TenantWithRole, MemberRole } from '../types';
 
 interface AuthContextType {
   user: User | null;
@@ -25,20 +25,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (token) {
-      // Decode user from token (simple JWT payload read)
       try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        setUser({ id: payload.id, email: payload.email, full_name: payload.full_name });
-
-        // Fetch tenants
-        api.get('/tenants').then((res) => {
-          const t = res.data.map((t: any) => ({ id: t.id, name: t.name, slug: t.slug, role: 'member' as const }));
-          setTenants(t);
+        // Check if this is a bypass token
+        if (token.startsWith('bypass-token-')) {
+          // Use mock user data for bypass
+          setUser({ id: 'bypass-user', email: 'bypass@example.com', full_name: 'Bypass User' });
+          
+          // Set mock tenants
+          const mockTenants: TenantWithRole[] = [
+            { id: 'bypass-tenant', name: 'Demo Tenant', slug: 'demo', role: 'owner' as MemberRole }
+          ];
+          setTenants(mockTenants);
+          
+          // Set current tenant from localStorage or first one
           const savedTenantId = localStorage.getItem('tenantId');
-          const current = t.find((tenant: TenantWithRole) => tenant.id === savedTenantId) || t[0] || null;
+          const current = mockTenants.find((tenant: TenantWithRole) => tenant.id === savedTenantId) || mockTenants[0] || null;
           setCurrentTenant(current);
           if (current) localStorage.setItem('tenantId', current.id);
-        }).finally(() => setIsLoading(false));
+          
+          // Set loading to false for bypass
+          setIsLoading(false);
+        } else {
+          // Decode normal JWT token
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          setUser({ id: payload.id, email: payload.email, full_name: payload.full_name });
+
+          // Fetch tenants
+          api.get('/tenants').then((res) => {
+            const t = res.data.map((t: any) => ({ id: t.id, name: t.name, slug: t.slug, role: 'member' as const }));
+            setTenants(t);
+            const savedTenantId = localStorage.getItem('tenantId');
+            const current = t.find((tenant: TenantWithRole) => tenant.id === savedTenantId) || t[0] || null;
+            setCurrentTenant(current);
+            if (current) localStorage.setItem('tenantId', current.id);
+          }).finally(() => setIsLoading(false));
+        }
       } catch {
         logout();
         setIsLoading(false);

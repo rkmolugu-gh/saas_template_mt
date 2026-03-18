@@ -3,9 +3,12 @@ import { z } from "zod";
 import { AppDataSource } from "../data-source";
 import { Item, ItemStatus } from "../../../backend/src/entities/Item";
 import { ItemRevision } from "../../../backend/src/entities/ItemRevision";
-import { authenticate } from "../middleware/auth";
+import { authenticate, AuthenticatedRequest } from "../middleware/auth";
 import { tenantScope, TenantScopedRequest } from "../middleware/tenantScope";
+import { requireRole } from "../middleware/requireRole";
+import { MemberRole } from "../../../backend/src/entities/TenantMembership";
 import { validate } from "../utils/validate";
+import { getParamOrFail } from "../utils/params";
 import { IsNull } from "typeorm";
 
 const router = Router();
@@ -52,8 +55,9 @@ router.get("/", authenticate, tenantScope, async (req: TenantScopedRequest, res:
 // GET /api/items/:id — get single item with current revision
 router.get("/:id", authenticate, tenantScope, async (req: TenantScopedRequest, res: Response) => {
   try {
+    const itemId = getParamOrFail(req, "id");
     const item = await AppDataSource.getRepository(Item).findOne({
-      where: { id: req.params.id, tenant_id: req.tenantId, deleted_at: IsNull() },
+      where: { id: itemId, tenant_id: req.tenantId, deleted_at: IsNull() },
       relations: ["current_revision"],
     });
     if (!item) {

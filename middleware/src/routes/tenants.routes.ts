@@ -7,6 +7,7 @@ import { tenantScope, TenantScopedRequest } from "../middleware/tenantScope";
 import { requireRole } from "../middleware/requireRole";
 import { MemberRole } from "../../../backend/src/entities/TenantMembership";
 import { validate } from "../utils/validate";
+import { getParamOrFail } from "../utils/params";
 
 const router = Router();
 
@@ -35,7 +36,8 @@ router.get("/", authenticate, async (req: AuthenticatedRequest, res: Response) =
 // GET /api/tenants/:id — get single tenant
 router.get("/:id", authenticate, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const tenant = await AppDataSource.getRepository(Tenant).findOneBy({ id: req.params.id });
+    const tenantId = getParamOrFail(req, "id");
+    const tenant = await AppDataSource.getRepository(Tenant).findOneBy({ id: tenantId });
     if (!tenant) {
       res.status(404).json({ error: "Tenant not found" });
       return;
@@ -56,7 +58,8 @@ router.put(
   async (req: TenantScopedRequest, res: Response) => {
     try {
       const repo = AppDataSource.getRepository(Tenant);
-      const tenant = await repo.findOneBy({ id: req.params.id });
+      const tenantId = getParamOrFail(req, "id");
+      const tenant = await repo.findOneBy({ id: tenantId });
       if (!tenant) {
         res.status(404).json({ error: "Tenant not found" });
         return;
@@ -79,7 +82,8 @@ router.delete(
   async (req: TenantScopedRequest, res: Response) => {
     try {
       const repo = AppDataSource.getRepository(Tenant);
-      const tenant = await repo.findOneBy({ id: req.params.id });
+      const tenantId = getParamOrFail(req, "id");
+      const tenant = await repo.findOneBy({ id: tenantId });
       if (!tenant) {
         res.status(404).json({ error: "Tenant not found" });
         return;

@@ -5,10 +5,11 @@ import { AppDataSource } from "../data-source";
 import { TenantMembership, MemberRole } from "../../../backend/src/entities/TenantMembership";
 import { Invitation } from "../../../backend/src/entities/Invitation";
 import { User } from "../../../backend/src/entities/User";
-import { authenticate } from "../middleware/auth";
+import { authenticate, AuthenticatedRequest } from "../middleware/auth";
 import { tenantScope, TenantScopedRequest } from "../middleware/tenantScope";
 import { requireRole } from "../middleware/requireRole";
 import { validate } from "../utils/validate";
+import { getParamOrFail } from "../utils/params";
 
 const router = Router();
 
@@ -82,7 +83,8 @@ router.post("/accept-invite/:token", authenticate, async (req: TenantScopedReque
     const invRepo = AppDataSource.getRepository(Invitation);
     const memberRepo = AppDataSource.getRepository(TenantMembership);
 
-    const invitation = await invRepo.findOneBy({ token: req.params.token });
+    const token = getParamOrFail(req, "token");
+    const invitation = await invRepo.findOneBy({ token });
     if (!invitation) {
       res.status(404).json({ error: "Invitation not found" });
       return;
@@ -124,7 +126,8 @@ router.put(
   async (req: TenantScopedRequest, res: Response) => {
     try {
       const repo = AppDataSource.getRepository(TenantMembership);
-      const member = await repo.findOneBy({ id: req.params.id, tenant_id: req.tenantId });
+      const memberId = getParamOrFail(req, "id");
+      const member = await repo.findOneBy({ id: memberId, tenant_id: req.tenantId });
       if (!member) {
         res.status(404).json({ error: "Member not found" });
         return;
@@ -147,7 +150,8 @@ router.delete(
   async (req: TenantScopedRequest, res: Response) => {
     try {
       const repo = AppDataSource.getRepository(TenantMembership);
-      const result = await repo.delete({ id: req.params.id, tenant_id: req.tenantId });
+      const memberId = getParamOrFail(req, "id");
+      const result = await repo.delete({ id: memberId, tenant_id: req.tenantId });
       if (result.affected === 0) {
         res.status(404).json({ error: "Member not found" });
         return;

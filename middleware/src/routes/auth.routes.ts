@@ -1,12 +1,14 @@
 import { Router, Request, Response } from "express";
 import * as bcrypt from "bcryptjs";
 import * as jwt from "jsonwebtoken";
+import { SignOptions } from "jsonwebtoken";
 import { z } from "zod";
 import { AppDataSource } from "../data-source";
 import { User } from "../../../backend/src/entities/User";
 import { Tenant, TenantStatus } from "../../../backend/src/entities/Tenant";
 import { TenantMembership, MemberRole } from "../../../backend/src/entities/TenantMembership";
 import { validate } from "../utils/validate";
+import { getParamOrFail } from "../utils/params";
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || "change-me-to-a-random-secret";
@@ -61,9 +63,9 @@ router.post("/signup", validate(signupSchema), async (req: Request, res: Respons
     await memberRepo.save(memberRepo.create({ tenant_id: tenant.id, user_id: user.id, role: MemberRole.OWNER }));
 
     // Generate JWT
-    const token = jwt.sign({ id: user.id, email: user.email, full_name: user.full_name }, JWT_SECRET, {
-      expiresIn: JWT_EXPIRES_IN,
-    });
+    const payload = { id: user.id, email: user.email, full_name: user.full_name };
+    const options: SignOptions = { expiresIn: JWT_EXPIRES_IN as any };
+    const token = jwt.sign(payload, JWT_SECRET, options);
 
     res.status(201).json({
       token,
@@ -94,9 +96,9 @@ router.post("/login", validate(loginSchema), async (req: Request, res: Response)
       relations: ["tenant"],
     });
 
-    const token = jwt.sign({ id: user.id, email: user.email, full_name: user.full_name }, JWT_SECRET, {
-      expiresIn: JWT_EXPIRES_IN,
-    });
+    const payload = { id: user.id, email: user.email, full_name: user.full_name };
+    const options: SignOptions = { expiresIn: JWT_EXPIRES_IN as any };
+    const token = jwt.sign(payload, JWT_SECRET, options);
 
     res.json({
       token,
