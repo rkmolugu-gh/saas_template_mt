@@ -4,7 +4,6 @@ export { TenantMembership, MemberRole } from "./TenantMembership";
 export { Invitation } from "./Invitation";
 export { Plan } from "./Plan";
 export { Subscription, SubscriptionStatus } from "./Subscription";
-export { PlanFeature } from "./PlanFeature";
 export { AuditLog } from "./AuditLog";
 export { Notification } from "./Notification";
 export { File } from "./File";
