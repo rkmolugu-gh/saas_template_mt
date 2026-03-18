@@ -13,16 +13,20 @@ echo 2. Open psql shell for the DB
 echo 3. Generate and run migration
 echo 4. Seed database
 echo 5. Drop database
-echo 6. Exit
+echo 6. Clean tables (for migration conflicts)
+echo 7. Run SQL migration
+echo 8. Exit
 echo ==========================================
-set /p choice="Enter your choice (1-6): "
+set /p choice="Enter your choice (1-8): "
 
 if "%choice%"=="1" goto CREATE_DB
 if "%choice%"=="2" goto OPEN_PSQL
 if "%choice%"=="3" goto MIGRATE
 if "%choice%"=="4" goto SEED
 if "%choice%"=="5" goto DROP_DB
-if "%choice%"=="6" goto EXIT
+if "%choice%"=="6" goto CLEAN_TABLES
+if "%choice%"=="7" goto SQL_MIGRATION
+if "%choice%"=="8" goto EXIT
 goto MENU
 
 :CREATE_DB
@@ -53,6 +57,7 @@ goto MENU
 
 :MIGRATE
 echo [%date% %time%] Generating and running migration... >> db-task.log
+echo NOTE: If you get "relation already exists" errors, use option 6 to clean tables first.
 cd /d "%~dp0backend"
 if exist "package.json" (
     echo [%date% %time%] Generating TypeORM migration... >> db-task.log
@@ -61,14 +66,21 @@ if exist "package.json" (
         echo [%date% %time%] Migration generated successfully >> db-task.log
         echo Migration generated successfully
     ) else (
-        echo [%date% %time%] Migration generation failed, trying alternative commands... >> db-task.log
-        npm run typeorm migration:generate >> ..\db-task.log 2>&1
+        echo [%date% %time%] Migration generation failed, trying to create migration first... >> db-task.log
+        npm run migration:create >> ..\db-task.log 2>&1
         if %errorlevel% equ 0 (
-            echo [%date% %time%] Migration generated successfully with alternative command >> db-task.log
-            echo Migration generated successfully with alternative command
+            echo [%date% %time%] Migration created successfully, trying to generate... >> db-task.log
+            npm run migration:generate >> ..\db-task.log 2>&1
+            if %errorlevel% equ 0 (
+                echo [%date% %time%] Migration generated successfully >> db-task.log
+                echo Migration generated successfully
+            ) else (
+                echo [%date% %time%] Migration generation failed, proceeding to run existing migrations... >> db-task.log
+                echo Migration generation failed, proceeding to run existing migrations...
+            )
         ) else (
-            echo [%date% %time%] Migration generation failed, proceeding to run existing migrations... >> db-task.log
-            echo Migration generation failed, proceeding to run existing migrations...
+            echo [%date% %time%] Migration creation failed, proceeding to run existing migrations... >> db-task.log
+            echo Migration creation failed, proceeding to run existing migrations...
         )
     )
     echo [%date% %time%] Running TypeORM migration... >> db-task.log
@@ -78,13 +90,13 @@ if exist "package.json" (
         echo Migration completed successfully
     ) else (
         echo [%date% %time%] Migration failed, trying alternative commands... >> db-task.log
-        npm run typeorm migration:run >> ..\db-task.log 2>&1
+        npm run typeorm -- migration:run -d src/data-source.ts >> ..\db-task.log 2>&1
         if %errorlevel% equ 0 (
             echo [%date% %time%] Migration completed successfully with alternative command >> db-task.log
             echo Migration completed successfully with alternative command
         ) else (
             echo [%date% %time%] Migration failed >> db-task.log
-            echo Migration failed
+            echo Migration failed - try option 6 to clean tables and re-run migration
         )
     )
 ) else (
@@ -133,6 +145,42 @@ if %errorlevel% equ 0 (
 ) else (
     echo [%date% %time%] Database drop failed >> db-task.log
     echo Database drop failed
+)
+set PGPASSWORD=
+pause
+goto MENU
+
+:CLEAN_TABLES
+echo [%date% %time%] Cleaning all tables to resolve migration conflicts... >> db-task.log
+set PGPASSWORD=postgres
+"C:\apps\postgresql16\bin\psql.exe" -h localhost -U postgres -d saas_template -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;" >> db-task.log 2>&1
+if %errorlevel% equ 0 (
+    echo [%date% %time%] Tables cleaned successfully >> db-task.log
+    echo Tables cleaned successfully - you can now run migrations
+) else (
+    echo [%date% %time%] Table cleaning failed >> db-task.log
+    echo Table cleaning failed
+)
+set PGPASSWORD=
+pause
+goto MENU
+
+:SQL_MIGRATION
+echo [%date% %time%] Running SQL migration from migration.sql... >> db-task.log
+set PGPASSWORD=postgres
+if exist "backend\migration.sql" (
+    echo [%date% %time%] Found migration.sql, executing... >> db-task.log
+    "C:\apps\postgresql16\bin\psql.exe" -h localhost -U postgres -d saas_template -f backend\migration.sql >> db-task.log 2>&1
+    if %errorlevel% equ 0 (
+        echo [%date% %time%] SQL migration completed successfully >> db-task.log
+        echo SQL migration completed successfully
+    ) else (
+        echo [%date% %time%] SQL migration failed >> db-task.log
+        echo SQL migration failed - check db-task.log for details
+    )
+) else (
+    echo [%date% %time%] migration.sql file not found in backend directory >> db-task.log
+    echo migration.sql file not found in backend directory
 )
 set PGPASSWORD=
 pause
