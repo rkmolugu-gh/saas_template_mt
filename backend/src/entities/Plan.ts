@@ -2,9 +2,7 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
-  OneToMany,
 } from "typeorm";
-import { PlanFeature } from "./PlanFeature";
 
 @Entity("plans")
 export class Plan {
@@ -28,8 +26,4 @@ export class Plan {
 
   @Column({ type: "jsonb", default: {} })
   limits!: Record<string, unknown>;
-
-  // Relations
-  @OneToMany(() => PlanFeature, (pf) => pf.plan)
-  features!: PlanFeature[];
 }
