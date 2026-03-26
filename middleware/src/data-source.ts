@@ -1,6 +1,5 @@
 import { DataSource } from "typeorm";
 import * as dotenv from "dotenv";
-import * as path from "path";
 
 dotenv.config();
 
@@ -11,9 +10,13 @@ export const AppDataSource = new DataSource({
   username: process.env.DB_USER || "postgres",
   password: process.env.DB_PASS || "postgres",
   database: process.env.DB_NAME || "saas_template",
-  synchronize: process.env.NODE_ENV === "development",
+  synchronize: false,
   logging: process.env.NODE_ENV === "development",
-  entities: [path.join(__dirname, "../..", "backend/src/entities/**/*.{ts,js}")],
+  entities: [],
   migrations: [],
   subscribers: [],
+  poolSize: parseInt(process.env.DB_POOL_SIZE || "10", 10),
+  extra: {
+    connectionTimeoutMillis: 5000,
+  },
 });

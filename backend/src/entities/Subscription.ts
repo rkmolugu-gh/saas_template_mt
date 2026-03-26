@@ -26,6 +26,9 @@ export class Subscription {
   @Column({ type: "uuid" })
   plan_id!: string;
 
+  @Column({ type: "timestamp", default: () => "CURRENT_TIMESTAMP" })
+  created_at!: Date;
+
   @Column({ type: "varchar", length: 255, nullable: true })
   stripe_sub_id!: string | null;
 
